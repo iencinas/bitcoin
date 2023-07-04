@@ -12,8 +12,9 @@ color3='#E600BA'
 #https://www.investing.com/crypto/bitcoin/historical-data
 
 
-btc_csv <- read_csv(unzip('data/btc.zip','btc.csv'))
+btc_csv <- read_csv(unzip('data/btc.zip','data/btc.csv'))
 btc_csv$dt <- mdy(btc_csv$Date)
+
 
 #crypto2
 list_coins<-crypto_list(only_active = TRUE)
