@@ -10,7 +10,9 @@ color3='#E600BA'
 
 #data from here
 #https://www.investing.com/crypto/bitcoin/historical-data
-btc_csv <- read_csv('data/btc.csv')
+
+
+btc_csv <- read_csv(unzip('data/btc.zip','btc.csv'))
 btc_csv$dt <- mdy(btc_csv$Date)
 
 #crypto2
@@ -23,7 +25,6 @@ btc_ddbb$dt <- as.Date(btc_ddbb$timestamp)
 #chose dates of csv that are not in crypto2
 aux <- btc_csv%>%filter(dt<min(btc_ddbb$dt))
 max(aux$dt);min(btc_ddbb$dt)
-
 
 head(btc_ddbb)
 head(btc_csv)
@@ -200,4 +201,4 @@ ggplot(btc_bubble)+
   scale_y_log10(breaks=c(0.1,0.2,0.5,1,2,5,10,20,50,100,200,400,600),labels = scales::percent)
 
 
-
+ 
