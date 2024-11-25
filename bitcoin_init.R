@@ -54,7 +54,7 @@ fredr_set_key(FRED_API_KEY)
 rate <- fredr(
   series_id = "DPRIME",
   observation_start = as.Date("2010-12-16"),
-  observation_end = as.Date("2024-01-01")
+  observation_end = as.Date(today())
 )
 
 tail(rate)
@@ -82,7 +82,7 @@ colnames(securities_assets) <- c('dt','securities')
 tail(rate)
 
 back <- btc
-#btc <- back
+btc <- back
 btc <- btc%>%filter(price>0)
 btc <- btc%>%left_join(sp500)
 btc <- btc%>%left_join(money)
@@ -91,14 +91,14 @@ btc <- btc%>%left_join(assets)
 btc <- btc%>%left_join(securities_assets)
 
 
-btc_1 <- btc%>%filter(price>1)
-btc_1 <- btc_1[,2]
-
-btc_1$text <- as.character(btc_1$price)
-btc_1$f <- as.numeric(substr(btc_1$text,1,1))
-btc_1 <- btc_1%>%group_by(f)%>%summarise(n=n())%>%group_by()%>%mutate(p=n/sum(n))
-btc_1$b <- with(btc_1,log(1+1/f,base = 10))
-ggplot(btc_1)+geom_line(aes(as.factor(f),p),group=1)+geom_line(aes(f,b,color='beford'))
+# btc_1 <- btc%>%filter(price>1)
+# btc_1 <- btc_1[,2]
+# 
+# btc_1$text <- as.character(btc_1$price)
+# btc_1$f <- as.numeric(substr(btc_1$text,1,1))
+# btc_1 <- btc_1%>%group_by(f)%>%summarise(n=n())%>%group_by()%>%mutate(p=n/sum(n))
+# btc_1$b <- with(btc_1,log(1+1/f,base = 10))
+# ggplot(btc_1)+geom_line(aes(as.factor(f),p),group=1)+geom_line(aes(f,b,color='beford'))
 
 #remove small volumen of btc?
 #btc <- btc%>%filter(dt>='2011-04-01')
@@ -108,11 +108,13 @@ ggplot(btc_1)+geom_line(aes(as.factor(f),p),group=1)+geom_line(aes(f,b,color='be
 first_halving=as.Date('2012-11-28')
 second_halving=as.Date('2016-07-09')
 third_halving=as.Date('2020-05-11')
+forth_halving=as.Date('2024-04-19')
 
 ggplot(btc,aes(dt,price))+geom_line()+scale_y_log10()+
   geom_vline(aes(xintercept=first_halving))+
   geom_vline(aes(xintercept=second_halving))+
   geom_vline(aes(xintercept=third_halving))+
+  geom_vline(aes(xintercept=forth_halving))+
   labs(x='date',y='log($price)')+
   scale_x_date(date_breaks = "1 year",date_labels='%Y')
 
@@ -122,12 +124,23 @@ btc <- btc%>%mutate(
     dt<=first_halving ~ 1,
     dt<=second_halving ~ 2,
     dt<=third_halving ~ 3,
-    dt<=as.Date('2024-01-01')~4
+    dt<=forth_halving-90 ~ 4, #unfortunately htere are 2 maximums
+    dt<=as.Date('2025-01-01')~5
   ))
-    #TRUE~4))
+  
 
 btc <- btc%>%group_by(periode)%>%mutate(max=ifelse(max(price)==price,price,NA),
                                         flag=ifelse(max(price)==price,1,0))
+
+btc <- btc%>%mutate(
+  periode = case_when(
+    dt<=first_halving ~ 1,
+    dt<=second_halving ~ 2,
+    dt<=third_halving ~ 3,
+    dt<=forth_halving ~ 4,
+    dt<=as.Date('2025-01-01')~5
+  ))
+
 
 #find the min value between the max value and the next halving.
 btc <- btc%>%mutate(
@@ -135,9 +148,11 @@ btc <- btc%>%mutate(
     dt>=(btc%>%filter(periode==1,flag==1))$dt & dt<=first_halving ~ 1,
     dt>=(btc%>%filter(periode==2,flag==1))$dt & dt<=second_halving ~ 2,
     dt>=(btc%>%filter(periode==3,flag==1))$dt & dt<=third_halving ~ 3,
-    dt>=(btc%>%filter(periode==4,flag==1))$dt  ~ 4,
+    dt>=(btc%>%filter(periode==4,flag==1))$dt & dt<=forth_halving-90 ~ 4,  
+    dt>=(btc%>%filter(periode==5,flag==1))$dt ~ -1,
     TRUE~-1
   ))
+# fourth_halving as.Date('2024-01-01') 
 
 btc <- btc%>%group_by(btw_periodes)%>%
   mutate(
@@ -145,7 +160,42 @@ btc <- btc%>%group_by(btw_periodes)%>%
     flag=ifelse(min(price)==price & btw_periodes>0,2,flag)
   )
 
+#-----------------------------------------------
+#same but with real data, not 
 #plot: colors = periodes between halvings, max and mins
+#find the max value between halvings
+btc <- btc%>%mutate(
+  periode1 = case_when(
+    dt<=first_halving ~ 1,
+    dt<=second_halving ~ 2,
+    dt<=third_halving ~ 3,
+    dt<=forth_halving ~ 4, #unfortunately htere are 2 maximums
+    dt<=as.Date('2025-01-01')~5
+  ))
+
+
+btc <- btc%>%group_by(periode1)%>%mutate(max1=ifelse(max(price)==price,price,NA),
+                                        flag1=ifelse(max(price)==price,1,0))
+
+#find the min value between the max value and the next halving.
+btc <- btc%>%mutate(
+  btw_periodes1 = case_when(
+    dt>=(btc%>%filter(periode1==1,flag==1))$dt & dt<=first_halving ~ 1,
+    dt>=(btc%>%filter(periode1==2,flag==1))$dt & dt<=second_halving ~ 2,
+    dt>=(btc%>%filter(periode1==3,flag==1))$dt & dt<=third_halving ~ 3,
+    dt>=(btc%>%filter(periode1==4,flag==1))$dt & dt<=forth_halving ~ 4,  
+    dt>=(btc%>%filter(periode1==5,flag==1))$dt ~ -1,
+    TRUE~-1
+  ))
+# fourth_halving as.Date('2024-01-01') 
+
+btc <- btc%>%group_by(btw_periodes1)%>%
+  mutate(
+    min1=ifelse(min(price)==price & btw_periodes>0,price,NA),
+    flag1=ifelse(min(price)==price & btw_periodes>0,2,flag1)
+  )
+#------------------------------------------
+
 p1 <- ggplot(btc)+
   geom_line(aes(dt,price,color=factor(periode)),size=1)+
   geom_point(aes(dt,max),size=4,shape=24,fill=color1)+
@@ -154,16 +204,82 @@ p1 <- ggplot(btc)+
   geom_vline(aes(xintercept=first_halving))+
   geom_vline(aes(xintercept=second_halving))+
   geom_vline(aes(xintercept=third_halving))+
+  geom_vline(aes(xintercept=forth_halving))+
   labs(x='date',y='log($price)')+
   scale_x_date(date_breaks = "1 year",date_labels='%Y')+
   theme(text = element_text(size = 18),
         axis.text.x=element_text(angle=45,hjust=1,vjust=1),
         legend.position = 'none')
 
+btc$id <- 1:nrow(btc)
+
 p1
-png(file="plots/btc_halvings.png",width=600*1.5, height=350*1.5)
+
+p1bis <- ggplot(btc)+
+  geom_line(aes(dt,price,color=factor(periode)),size=1)+
+  geom_point(aes(dt,max1),size=4,shape=24,fill=color1)+
+  geom_point(aes(dt,min1),size=4,shape=25,fill=color2)+
+  scale_y_log10()+  
+  geom_vline(aes(xintercept=first_halving))+
+  geom_vline(aes(xintercept=second_halving))+
+  geom_vline(aes(xintercept=third_halving))+
+  geom_vline(aes(xintercept=forth_halving))+
+  labs(x='date',y='log($price)')+
+  scale_x_date(date_breaks = "1 year",date_labels='%Y')+
+  theme(text = element_text(size = 18),
+        axis.text.x=element_text(angle=45,hjust=1,vjust=1),
+        legend.position = 'none')
+
+btc$id <- 1:nrow(btc)
+
+p1bis
+
+linear <- btc%>%filter(id>100)
+
+new_dates <-data.frame(
+  dt=as.Date(( max(linear$dt)+1):(max(linear$dt)+3000)),
+  id=(max(linear$id)+1):(max(linear$id)+3000))
+linear1=bind_rows(linear,new_dates)
+
+lm1 <- lm(data = linear%>%filter(!is.na(max),periode!=5),log(price)~log(id))
+linear1$fit.max <- exp(predict.lm(lm1,linear1))
+
+lm1bis <- lm(data = linear%>%filter(!is.na(max1),periode!=5),log(price)~log(id))
+linear1$fit.max1 <- exp(predict.lm(lm1bis,linear1))
+
+lm2 <- lm(data = linear%>%filter(!is.na(min),periode!=5),log(price)~log(id))
+linear1$fit.min <- exp(predict.lm(lm2,linear1))
+
+
+tail(linear1)
+
+ggplot(linear1)+
+  geom_line(aes(id,fit.max))+
+  geom_line(aes(id,fit.max1),linetype='longdash')+
+  geom_line(aes(id,fit.min))+
+  geom_line(aes(id,price,color=factor(periode)),size=1)+
+  geom_point(aes(id,max1),size=3,shape=0,fill=color1)+
+  geom_point(aes(id,max),size=4,shape=1,fill=color1)+
+  geom_point(aes(id,min1),size=4,shape=1,fill=color2)+
+  scale_y_log10()+scale_x_log10()
+
+ggplot(linear1)+
+  geom_line(aes(dt,fit.max))+
+  geom_line(aes(dt,fit.max1),linetype='longdash')+
+  geom_line(aes(dt,fit.min))+
+  geom_line(aes(dt,price,color=factor(periode)),size=1)+
+  geom_point(aes(dt,max1),size=3,shape=0,fill=color1)+
+  geom_point(aes(dt,max),size=4,shape=1,fill=color1)+
+  geom_point(aes(dt,min1),size=4,shape=1,fill=color2)+
+  geom_hline(aes(yintercept=200000),size=0.5,color='black',linetype='dotted')+
+  scale_y_log10()
+
+linear1%>%filter(fit.max>199000)%>%select(dt,fit.max,fit.max1)
+linear1%>%filter(year(dt)==2025,day(dt)==1)%>%select(dt,fit.max,fit.max1)
+
+# png(file="plots/btc_halvings.png",width=600*1.5, height=350*1.5)
 p1
-dev.off()
+# dev.off()
 
 
 
@@ -216,9 +332,9 @@ p2 <- ggplot(btc_winter)+
   theme(text = element_text(size = 18))
 
 p2
-png(file="plots/winter.png",width=600*1.5, height=350*1.5)
+# png(file="plots/winter.png",width=600*1.5, height=350*1.5)
 p2
-dev.off()
+# dev.off()
 
 
 #-----------non crypto data
@@ -241,7 +357,8 @@ btc_bubble <- btc%>%dplyr::filter(
     dt<=max_v[2]+delta & dt>=min_v[1]  ~ TRUE,
     dt<=max_v[3]+delta & dt>=min_v[2]  ~ TRUE,
     dt<=max_v[4]+delta & dt>=min_v[3]  ~ TRUE,
-    dt>=min_v[4]  ~ TRUE,
+    dt<=max_v[5]+delta & dt>=min_v[4]  ~ TRUE,
+    dt>=min_v[5]  ~ TRUE,
     TRUE~FALSE
   )
 )
@@ -252,8 +369,9 @@ btc_bubble <- btc_bubble%>%mutate(
     dt<=max_v[2]+delta & dt>=min_v[1]  ~ 2,
     dt<=max_v[3]+delta & dt>=min_v[2]  ~ 3,
     dt<=max_v[4]+delta & dt>=min_v[3]  ~ 4,
-    dt>=min_v[4]  ~ 5,
-    TRUE~10))
+    dt<=max_v[5]+delta & dt>=min_v[4]  ~ 5,
+    dt>=min_v[6]  ~ 6,
+    TRUE~10))%>%filter(periode!=10,periode!=1)
 #work with days after maximum and 
 #with ratios from that maximum
 btc_bubble <- btc_bubble%>%group_by(periode)%>%mutate(days_after_max=row_number(),
@@ -284,13 +402,12 @@ p3 <-   ggplot(btc_bubble)+
   geom_label(data=today,aes(days_after_max+100,i-0.6,label='you are here'),hjust=0,size=6)+
   geom_segment(data=today,aes(x = days_after_max+100, y = i-0.6, xend = days_after_max+2, yend = i-0.1),
                arrow = arrow(type = 'closed',length = unit(0.3, "cm")))+
-  scale_y_log10(breaks=c(0.1,0.2,0.5,1,2,5,10,20,50,100,200,400,600),labels = scales::percent)+
-  theme(text = element_text(size = 18))
+  scale_y_log10(breaks=c(0.1,0.2,0.5,1,2,5,10,20,50,100,200,400,600),labels = scales::percent)
 
-
+aa <- data.frame(btc_bubble%>%filter(periode==5))
 
 p3
-png(file="plots/bubble.png",width=600*1.5, height=350*1.5)
+# png(file="plots/bubble.png",width=600*1.5, height=350*1.5)
 p3
 dev.off()
 
