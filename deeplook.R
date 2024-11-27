@@ -104,4 +104,93 @@ ggplot(l5)+
   geom_vline(aes(xintercept=third_halving))+
   guides(colour=guide_legend(nrow=2,byrow=TRUE))
 
+#l4 deeper look
 
+ggplot(l4)+
+  geom_line(aes(dt,price,color='BTC price (log)'))+
+  labs(x='date',y='index',colour='')+
+  scale_x_date(date_breaks = "1 year",date_labels='%Y')+
+  theme(text = element_text(size = 16),
+        axis.text.x=element_text(angle=45,hjust=1,vjust=1),
+        legend.position = 'top')+
+  geom_vline(aes(xintercept=first_halving))+
+  geom_vline(aes(xintercept=second_halving))+
+  geom_vline(aes(xintercept=third_halving))+
+  guides(colour=guide_legend(nrow=2,byrow=TRUE))
+
+l41 <- l4%>%filter(dt>'2021-01-01',dt<'2022-01-01')
+ggplot(l41)+
+  geom_line(aes(dt,log(btc_i,base = 10),color='BTC price (log)'))+
+  labs(x='date',y='index',colour='')+
+  scale_x_date(date_breaks = "1 year",date_labels='%Y')+
+  theme(text = element_text(size = 16),
+        axis.text.x=element_text(angle=45,hjust=1,vjust=1),
+        legend.position = 'top')
+#find periodes to llok up
+
+
+#halving dates
+
+a=as.Date('2021-02-01')
+b=as.Date('2021-03-10')
+c=as.Date('2021-04-10')
+d=as.Date('2021-05-01')
+e=as.Date('2021-09-01')
+
+ggplot(l41,aes(dt,price))+geom_line()+
+  geom_vline(aes(xintercept=a))+
+  geom_vline(aes(xintercept=b))+
+  geom_vline(aes(xintercept=c))+
+  geom_vline(aes(xintercept=d))+
+  geom_vline(aes(xintercept=e))+
+  labs(x='date',y='log($price)')+
+  scale_x_date(date_breaks = "1 months",date_labels='%Y-%m')
+
+#find the max value between halvings
+l41 <- l41%>%mutate(
+  periode = case_when(
+    dt<=a ~ 1,
+    dt<=b ~ 2,
+    dt<=c ~ 3,
+    dt<=d ~ 4, #unfortunately htere are 2 maximums
+    dt<=e ~ 5,
+    TRUE ~6
+  ))
+
+
+l41 <- l41%>%group_by(periode)%>%mutate(max=ifelse(max(price)==price,price,NA),
+                                        flag=ifelse(max(price)==price,1,0))
+
+#find the min value between the max value and the next halving.
+l41 <- l41%>%mutate(
+  btw_periodes = case_when(
+    dt>=(l41%>%filter(periode==1,flag==1))$dt & dt<=a ~ 1,
+    dt>=(l41%>%filter(periode==2,flag==1))$dt & dt<=b ~ 2,
+    dt>=(l41%>%filter(periode==3,flag==1))$dt & dt<=c ~ 3,
+    dt>=(l41%>%filter(periode==4,flag==1))$dt & dt<=c ~ 4,  
+    dt>=(l41%>%filter(periode==5,flag==1))$dt & dt<=e ~ 5,  
+    dt>=(l41%>%filter(periode==6,flag==1))$dt ~ 6,
+    TRUE ~ -1
+  ))
+# fourth_halving as.Date('2024-01-01') 
+
+l41 <- l41%>%group_by(btw_periodes)%>%
+  mutate(
+    min=ifelse(min(price)==price & btw_periodes>0,price,NA),
+    flag=ifelse(min(price)==price & btw_periodes>0,2,flag)
+  )
+
+ggplot(l41)+
+  geom_line(aes(dt,price,color=factor(periode)),size=1)+
+  geom_point(aes(dt,max),size=4,shape=24,fill=color1)+
+  geom_point(aes(dt,min),size=4,shape=25,fill=color2)+
+  scale_y_log10()+  
+  geom_vline(aes(xintercept=a))+
+  geom_vline(aes(xintercept=b))+
+  geom_vline(aes(xintercept=c))+
+  geom_vline(aes(xintercept=d))+
+  geom_vline(aes(xintercept=e))+
+  labs(x='date',y='price')+
+  scale_x_date(date_breaks = "1 months",date_labels='%Y-%m')+
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
+  

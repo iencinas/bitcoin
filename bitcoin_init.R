@@ -451,7 +451,7 @@ p10 <- ggplot(btc_extra)+
   theme(text = element_text(size = 20))
 
 p10
-png(file="plots/extra_info2.png",width=600*1.5, height=350*1.5)
+# png(file="plots/extra_info2.png",width=600*1.5, height=350*1.5)
 p10
 dev.off()
 
