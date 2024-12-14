@@ -197,7 +197,7 @@ btc <- btc%>%group_by(btw_periodes1)%>%
 #------------------------------------------
 
 p1 <- ggplot(btc)+
-  geom_line(aes(dt,price,color=factor(periode)),size=1)+
+  geom_line(aes(dt,price,color=factor(periode)),linewidth=1)+
   geom_point(aes(dt,max),size=4,shape=24,fill=color1)+
   geom_point(aes(dt,min),size=4,shape=25,fill=color2)+
   scale_y_log10()+  
@@ -231,7 +231,9 @@ p1bis <- ggplot(btc)+
         legend.position = 'none')
 
 btc$id <- 1:nrow(btc)
+btc$id <- 1:nrow(btc)
 
+p1
 p1bis
 
 linear <- btc%>%filter(id>100)
@@ -253,7 +255,7 @@ linear1$fit.min <- exp(predict.lm(lm2,linear1))
 
 tail(linear1)
 
-ggplot(linear1)+
+ggplot(linear1%>%filter(id>3000))+
   geom_line(aes(id,fit.max))+
   geom_line(aes(id,fit.max1),linetype='longdash')+
   geom_line(aes(id,fit.min))+
@@ -263,7 +265,8 @@ ggplot(linear1)+
   geom_point(aes(id,min1),size=4,shape=1,fill=color2)+
   scale_y_log10()+scale_x_log10()
 
-ggplot(linear1)+
+
+ggplot(linear1%>%filter(id>3000))+
   geom_line(aes(dt,fit.max))+
   geom_line(aes(dt,fit.max1),linetype='longdash')+
   geom_line(aes(dt,fit.min))+
@@ -274,7 +277,6 @@ ggplot(linear1)+
   geom_hline(aes(yintercept=200000),size=0.5,color='black',linetype='dotted')+
   scale_y_log10()
 
-linear1%>%filter(fit.max>199000)%>%select(dt,fit.max,fit.max1)
 linear1%>%filter(year(dt)==2025,day(dt)==1)%>%select(dt,fit.max,fit.max1)
 
 # png(file="plots/btc_halvings.png",width=600*1.5, height=350*1.5)
@@ -411,6 +413,17 @@ p3
 p3
 dev.off()
 
+ggplot(btc_bubble%>%filter(days_after_max>600))+
+  geom_line(aes(days_after_max,i,color=factor(t)),size=1)+
+  labs(x='days since minimum',y='log(% from the previous minimum)',title='Bitcoin bubble, from minimum to maximum',
+       color='Crypto Bubbles \n (year of maximum)')+
+  geom_point(aes(days_after_max,max_i),size=3,shape=24,fill=color1)+
+  geom_point(data=today,aes(days_after_max,i),size=4,fill=color2,shape=21)+
+  geom_segment(data=today,aes(x = days_after_max+100, y = i-0.6, xend = days_after_max+2, yend = i-0.1),
+               arrow = arrow(type = 'closed',length = unit(0.3, "cm")))+
+  scale_y_log10(breaks=c(0.1,0.2,0.5,1,2,5,10,20,50,100,200,400,600),labels = scales::percent)
+
+p1
 #-------------------
 #extra info
 #-------------------
