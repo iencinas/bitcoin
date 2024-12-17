@@ -211,6 +211,22 @@ p1 <- ggplot(btc)+
         axis.text.x=element_text(angle=45,hjust=1,vjust=1),
         legend.position = 'none')
 
+library(lubridate)
+ggplot(btc%>%filter(year(as.Date(dt))>=2016))+
+  geom_line(aes(dt,price,color=factor(periode)),linewidth=1)+
+  geom_point(aes(dt,max),size=4,shape=24,fill=color1)+
+  geom_point(aes(dt,min),size=4,shape=25,fill=color2)+
+  scale_y_log10()+  
+  geom_vline(aes(xintercept=first_halving))+
+  geom_vline(aes(xintercept=second_halving))+
+  geom_vline(aes(xintercept=third_halving))+
+  geom_vline(aes(xintercept=forth_halving))+
+  labs(x='date',y='log($price)')+
+  scale_x_date(date_breaks = "1 year",date_labels='%Y')+
+  theme(text = element_text(size = 18),
+        axis.text.x=element_text(angle=45,hjust=1,vjust=1),
+        legend.position = 'none')
+
 btc$id <- 1:nrow(btc)
 
 p1
@@ -413,7 +429,17 @@ p3
 p3
 dev.off()
 
-ggplot(btc_bubble%>%filter(days_after_max>600))+
+ggplot(btc_bubble%>%filter(days_after_max>600,t!='2013'))+
+  geom_line(aes(days_after_max,i,color=factor(t)),size=1)+
+  labs(x='days since minimum',y='log(% from the previous minimum)',title='Bitcoin bubble, from minimum to maximum',
+       color='Crypto Bubbles \n (year of maximum)')+
+  geom_point(aes(days_after_max,max_i),size=3,shape=24,fill=color1)+
+  geom_point(data=today,aes(days_after_max,i),size=4,fill=color2,shape=21)+
+  geom_segment(data=today,aes(x = days_after_max+100, y = i-0.6, xend = days_after_max+2, yend = i-0.1),
+               arrow = arrow(type = 'closed',length = unit(0.3, "cm")))+
+  scale_y_log10(breaks=c(0.1,0.2,0.5,1,2,5,10,20,50,100,200,400,600),labels = scales::percent)
+
+ggplot(btc_bubble%>%filter(t!='2013'))+
   geom_line(aes(days_after_max,i,color=factor(t)),size=1)+
   labs(x='days since minimum',y='log(% from the previous minimum)',title='Bitcoin bubble, from minimum to maximum',
        color='Crypto Bubbles \n (year of maximum)')+

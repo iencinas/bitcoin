@@ -259,7 +259,7 @@ ggplot(l41b)+
 # -3 days to -10 days of each pick
 max_v <- (l41%>%filter(flag==1))$dt
 de=10
-d=2
+d=30
 l41$deltas <- with(l41,
   case_when(
     dt<=max_v[1]+de & dt>=max_v[1]-d  ~ 1,
