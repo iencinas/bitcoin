@@ -9,7 +9,7 @@ ggplot(linear1)+
   geom_line(aes(dt,price,color=factor(periode)),size=1)+
   geom_point(aes(dt,max1),size=3,shape=0,fill=color1)+
   geom_point(aes(dt,max),size=4,shape=1,fill=color1)+
-  geom_point(aes(dt,min1),size=4,shape=1,fill=color2)+
+  # geom_point(aes(dt,min1),size=4,shape=1,fill=color2)+
   geom_hline(aes(yintercept=200000),size=0.5,color='black',linetype='dotted')+
   scale_y_log10()
 
@@ -127,9 +127,8 @@ ggplot(l41)+
   theme(text = element_text(size = 16),
         axis.text.x=element_text(angle=45,hjust=1,vjust=1),
         legend.position = 'top')
+
 #find periodes to llok up
-
-
 #halving dates
 
 a=as.Date('2021-02-01')
@@ -137,7 +136,6 @@ b=as.Date('2021-03-10')
 c=as.Date('2021-04-10')
 d=as.Date('2021-05-01')
 e=as.Date('2021-05-29')
-
 f=as.Date('2021-07-01')
 h=as.Date('2021-10-02')
 i=as.Date('2021-11-01')

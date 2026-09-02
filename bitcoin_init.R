@@ -125,22 +125,22 @@ btc <- btc%>%mutate(
     dt<=second_halving ~ 2,
     dt<=third_halving ~ 3,
     dt<=forth_halving-90 ~ 4, #unfortunately htere are 2 maximums
-    dt<=as.Date('2025-01-01')~5
+    dt<=as.Date(today())~5
   ))
   
 
 btc <- btc%>%group_by(periode)%>%mutate(max=ifelse(max(price)==price,price,NA),
                                         flag=ifelse(max(price)==price,1,0))
 
-btc <- btc%>%mutate(
-  periode = case_when(
-    dt<=first_halving ~ 1,
-    dt<=second_halving ~ 2,
-    dt<=third_halving ~ 3,
-    dt<=forth_halving ~ 4,
-    dt<=as.Date('2025-01-01')~5
-  ))
-
+# btc <- btc%>%mutate(
+#   periode = case_when(
+#     dt<=first_halving ~ 1,
+#     dt<=second_halving ~ 2,
+#     dt<=third_halving ~ 3,
+#     dt<=forth_halving ~ 4,
+#     dt<=as.Date(as.Date(today()))~5
+#   ))
+# 
 
 #find the min value between the max value and the next halving.
 btc <- btc%>%mutate(
@@ -210,9 +210,10 @@ p1 <- ggplot(btc)+
   theme(text = element_text(size = 18),
         axis.text.x=element_text(angle=45,hjust=1,vjust=1),
         legend.position = 'none')
+p1
 
 library(lubridate)
-ggplot(btc%>%filter(year(as.Date(dt))>=2016))+
+ggplot(btc%>%filter(year(as.Date(dt))>=2013))+
   geom_line(aes(dt,price,color=factor(periode)),linewidth=1)+
   geom_point(aes(dt,max),size=4,shape=24,fill=color1)+
   geom_point(aes(dt,min),size=4,shape=25,fill=color2)+
@@ -228,8 +229,6 @@ ggplot(btc%>%filter(year(as.Date(dt))>=2016))+
         legend.position = 'none')
 
 btc$id <- 1:nrow(btc)
-
-p1
 
 p1bis <- ggplot(btc)+
   geom_line(aes(dt,price,color=factor(periode)),size=1)+
@@ -278,18 +277,18 @@ ggplot(linear1%>%filter(id>3000))+
   geom_line(aes(id,price,color=factor(periode)),size=1)+
   geom_point(aes(id,max1),size=3,shape=0,fill=color1)+
   geom_point(aes(id,max),size=4,shape=1,fill=color1)+
-  geom_point(aes(id,min1),size=4,shape=1,fill=color2)+
+  # geom_point(aes(id,min1),size=4,shape=1,fill=color2)+
   scale_y_log10()+scale_x_log10()
 
 
-ggplot(linear1%>%filter(id>3000))+
+ggplot(linear1%>%filter(id>30))+
   geom_line(aes(dt,fit.max))+
   geom_line(aes(dt,fit.max1),linetype='longdash')+
   geom_line(aes(dt,fit.min))+
   geom_line(aes(dt,price,color=factor(periode)),size=1)+
   geom_point(aes(dt,max1),size=3,shape=0,fill=color1)+
   geom_point(aes(dt,max),size=4,shape=1,fill=color1)+
-  geom_point(aes(dt,min1),size=4,shape=1,fill=color2)+
+  # geom_point(aes(dt,min1),size=4,shape=1,fill=color2)+
   geom_hline(aes(yintercept=200000),size=0.5,color='black',linetype='dotted')+
   scale_y_log10()
 
@@ -312,7 +311,7 @@ p1
 max_v <- (btc%>%filter(flag==1))$dt
 min_v <- (btc%>%filter(flag==2))$dt
 
-
+tail(btc_winter$i,n=100)
 #create a separate dataframe
 delta=0 #days after minimum to be shown
 btc_winter <- btc%>%filter(
@@ -321,6 +320,7 @@ btc_winter <- btc%>%filter(
     dt<=min_v[2]+delta & dt>=max_v[2]  ~ TRUE,
     dt<=min_v[3]+delta & dt>=max_v[3]  ~ TRUE,
     dt<=min_v[4]+delta & dt>=max_v[4]  ~ TRUE,
+    dt<=as.Date(today())+delta & dt>=max_v[5]  ~ TRUE,
     TRUE~F))
 
 
@@ -335,7 +335,8 @@ btc_winter$t <- with(btc_winter,
                        periode==1~'2011',
                        periode==2~'2013-2015',
                        periode==3~'2017-2018',
-                       periode==4~'2021-2022'
+                       periode==4~'2021-2022',
+                       periode==5~'now'
                      ))
 btc_winter$point <- with(btc_winter,(dt%in%max_v)*days_after_max)
 btc_winter$now <- with(btc_winter,(dt==max(btc$dt))*days_after_max)
@@ -427,6 +428,18 @@ aa <- data.frame(btc_bubble%>%filter(periode==5))
 p3
 # png(file="plots/bubble.png",width=600*1.5, height=350*1.5)
 p3
+ggplot(btc_bubble%>%filter(t>2013))+
+  geom_line(aes(days_after_max,i,color=factor(t)),size=1)+
+  labs(x='days since minimum',y='log(% from the previous minimum)',title='Bitcoin bubble, from minimum to maximum',
+       color='Crypto Bubbles \n (year of maximum)')+
+  theme(legend.position = c(0.8, 0.3))+
+  geom_point(aes(days_after_max,max_i),size=3,shape=24,fill=color1)+
+  geom_point(data=today,aes(days_after_max,i),size=4,fill=color2,shape=21)+
+  geom_label(data=today,aes(days_after_max+100,i-0.6,label='you are here'),hjust=0,size=6)+
+  geom_segment(data=today,aes(x = days_after_max+100, y = i-0.6, xend = days_after_max+2, yend = i-0.1),
+               arrow = arrow(type = 'closed',length = unit(0.3, "cm")))+
+  scale_y_log10(breaks=c(0.1,0.2,0.5,1,2,5,10,20,50,100,200,400,600),labels = scales::percent)
+
 dev.off()
 
 ggplot(btc_bubble%>%filter(days_after_max>600,t!='2013'))+
@@ -493,6 +506,23 @@ p10
 # png(file="plots/extra_info2.png",width=600*1.5, height=350*1.5)
 p10
 dev.off()
+
+ggplot(btc_extra%>%filter(year(dt)>=2021))+
+  # geom_line(aes(dt,btc_i-7200,color='BTC price (log)'))+
+  geom_line(aes(dt,sp500_i,color='SP500 index'))+
+  geom_point(aes(dt,money_i,color='Money supply'),size=1)+
+  geom_path(aes(dt,(rate_i),color='Interest Rate'),size=1)+
+  geom_point(aes(dt,assets_i,color='Assets hold by FED'),size=0.5)+
+  labs(x='date',y='index',colour='')+
+  scale_x_date(date_breaks = "1 year",date_labels='%Y')+
+  theme(text = element_text(size = 16),
+        axis.text.x=element_text(angle=45,hjust=1,vjust=1),
+        legend.position = 'top')+
+  guides(colour=guide_legend(nrow=2,byrow=TRUE))+
+  theme(text = element_text(size = 20))
+
+
+
 
 btt <- btc_extra[complete.cases(btc_extra[c('price','sp500')]),c('price','sp500')]
 cor((btt$price),(btt$sp500))
